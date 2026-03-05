@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>КИБЕРПАНК МОНИТОРИНГ ▣ ДОСТУПНОСТЬ САЙТОВ</title>
+    <style>
+        /* ===== ГЛОБАЛЬНЫЙ КИБЕРПАНК-СТИЛЬ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #020308);
+            color: #00ffcc;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            border: 2px solid #00ffff;
+            box-shadow: inset 0 0 50px #00ff9933, 0 0 30px #00ccff;
+        }
+
+        /* неоновые линии по бокам */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, 
+                rgba(0,255,255,0.03) 0px, 
+                rgba(255,0,255,0.03) 2px, 
+                transparent 2px, 
+                transparent 10px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ===== УВЕДОМЛЕНИЯ (справа сверху) ===== */
+        #notification-area {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .notif {
+            background: #110927;
+            border: 2px solid #ff00c6;
+            color: #a0f0ff;
+            padding: 16px 18px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #ff00c6, inset 0 0 10px #ff44e6;
+            backdrop-filter: blur(5px);
+            border-radius: 0px;
+            clip-path: polygon(0% 0%, 100% 0%, 95% 100%, 0% 100%);
+            animation: glitch-notif 0.3s ease;
+            word-break: break-word;
+            transform: skewX(-5deg);
+            transition: 0.2s;
+        }
+
+        @keyframes glitch-notif {
+            0% { opacity: 0; transform: translateX(50px) skewX(-10deg); }
+            50% { opacity: 1; transform: translateX(-5px) skewX(5deg); }
+            100% { transform: translateX(0) skewX(-5deg); }
+        }
+
+        .notif.success { border-color: #00ffaa; box-shadow: 0 0 20px #00ffaa; text-shadow: 0 0 5px #00ffaa; }
+        .notif.error { border-color: #ff0055; box-shadow: 0 0 20px #ff0055; text-shadow: 0 0 5px #ff0055; }
+        .notif.warning { border-color: #ffaa00; box-shadow: 0 0 20px #ffaa00; }
+
+        /* ===== ШАПКА ===== */
+        header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        /* окно добавления сайта — сверху посередине */
+        .add-site-panel {
+            background: #0b0d1e;
+            border: 3px solid #0ff;
+            padding: 20px 30px;
+            width: 600px;
+            max-width: 90vw;
+            box-shadow: 0 0 40px #0ff, inset 0 0 20px #0ff;
+            clip-path: polygon(0 0, 100% 0, 98% 100%, 2% 100%);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .add-site-panel input {
+            flex: 2 1 250px;
+            background: #010314;
+            border: 2px solid #ff00d0;
+            padding: 14px 20px;
+            font-size: 1.2rem;
+            color: #0ff;
+            font-weight: bold;
+            outline: none;
+            text-transform: lowercase;
+        }
+
+        .add-site-panel input::placeholder {
+            color: #3f3f6e;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .add-site-panel button {
+            background: #000c1a;
+            border: 3px solid #ff00c1;
+            color: #00ffff;
+            font-weight: bold;
+            font-size: 1.3rem;
+            padding: 10px 30px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            transition: 0.2s;
+            box-shadow: 0 0 15px #f0f;
+            clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+        }
+
+        .add-site-panel button:hover {
+            background: #ff00c1;
+            color: #000;
+            box-shadow: 0 0 40px #ff00c1, inset 0 0 20px black;
+        }
+
+        /* ===== ГЛАВНАЯ СЕТКА МОНИТОРИНГА ===== */
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* карточка сайта */
+        .site-card {
+            background: #050712;
+            border: 2px solid #0ef;
+            padding: 18px 15px 15px 15px;
+            box-shadow: 0 0 20px #00e0ff, inset 0 0 15px #00e0ff33;
+            transition: 0.15s;
+            clip-path: polygon(0% 0%, 100% 0%, 97% 100%, 3% 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .site-card::after {
+            content: '⌬';
+            position: absolute;
+            bottom: 5px; right: 10px;
+            color: #ff00aa;
+            opacity: 0.4;
+            font-size: 20px;
+        }
+
+        .site-name {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-shadow: 0 0 10px cyan, 0 0 20px blue;
+            border-bottom: 2px dashed #ff00aa;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            word-break: break-all;
+            text-transform: uppercase;
+        }
+
+        .ping-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.3rem;
+            margin: 10px 0;
+            background: #0a0c1a;
+            padding: 10px;
+            border-left: 8px solid #ff00c1;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0 5px;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            font-weight: bold;
+            background: black;
+            clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+            font-size: 1.2rem;
+        }
+
+        .online { background: #00994c; color: #ccffcc; border: 2px solid #0f0; box-shadow: 0 0 20px #0f0; }
+        .offline { background: #aa0044; color: #ffcccc; border: 2px solid #ff0055; box-shadow: 0 0 20px #ff0055; }
+
+        .ping-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            color: #f0f;
+            text-shadow: 0 0 8px magenta;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: 2px solid #ff2266;
+            color: #ff99cc;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            padding: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+        }
+
+        .delete-btn:hover {
+            background: #ff2266;
+            color: black;
+            box-shadow: 0 0 30px red;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 50px;
+            color: #5f5faf;
+            font-size: 1rem;
+            border-top: 2px solid cyan;
+            padding: 20px;
+        }
+
+        /* скан-линия */
+        .glitch {
+            animation: glitch 3s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-area"></div>
+
+    <header>
+        <div class="add-site-panel">
+            <input type="text" id="newSiteUrl" placeholder="example.com или https://" value="">
+            <button id="addSiteBtn">[ ДОБАВИТЬ ]</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="monitorContainer" class="monitor-grid">
+            <!-- карточки будут генерироваться из JS -->
+        </div>
+    </main>
+
+    <div class="footer-note">
+        ⚡ M О Н И Т О Р И Н Г  //  КИБЕРПАНК 2088 ⚡<br>
+        пинг симулирует реальный запрос (JSONP / fetch) ★ статус обновляется каждые 30 сек.
+    </div>
+
+    <script>
+        (function() {
+            // ---------- НАЧАЛЬНЫЕ ПОПУЛЯРНЫЕ САЙТЫ РОССИИ ----------
+            const DEFAULT_SITES = [
+                'yandex.ru',
+                'vk.com',
+                'mail.ru',
+                'ok.ru',
+                'rambler.ru',
+                'avito.ru',
+                'wildberries.ru',
+                'ozon.ru',
+                'gosuslugi.ru',
+                'rbc.ru',
+                'ria.ru',
+                'kinopoisk.ru',
+                '2gis.ru',
+                'habr.com',
+                'moikrug.ru'
+            ];
+
+            // хранилище: массив объектов { url, lastStatus, lastPing, lastChecked }
+            let sites = [];
+
+            // уведомления
+            function addNotification(message, type = 'warning') {
+                const area = document.getElementById('notification-area');
+                const notif = document.createElement('div');
+                notif.className = `notif ${type}`;
+                notif.textContent = `⚠ ${message}`;
+                area.appendChild(notif);
+                setTimeout(() => {
+                    if (notif.parentNode) notif.remove();
+                }, 5000);
+            }
+
+            // функция получения пинга (измеряем через fetch с таймаутом)
+            async function pingSite(url) {
+                const start = Date.now();
+                // добавляем протокол, если отсутствует
+                let testUrl = url.trim();
+                if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) {
+                    testUrl = 'https://' + testUrl;
+                }
+                // случай, если уже с протоколом
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000); // таймаут 8 сек
+
+                    const response = await fetch(testUrl, { 
+                        method: 'HEAD',
+                        mode: 'no-cors', // важно для междоменных, но мы получим ответ или ошибку, пинг измерим
+                        signal: controller.signal,
+                        cache: 'no-cache',
+                    }).catch(err => { throw err; });
+
+                    clearTimeout(timeoutId);
+                    const pingTime = Date.now() - start;
+                    // при no-cors status обычно 0, но запрос выполнен - считаем успехом
+                    return { success: true, ping: pingTime, status: 'online' };
+                } catch (error) {
+                    // попробуем второй способ с картинкой? но оставим как офлайн
+                    return { success: false, ping: null, status: 'offline' };
+                }
+            }
+
+            // обновление статуса одного сайта + уведомление при изменении
+            async function refreshSiteStatus(siteObj, index) {
+                const oldStatus = siteObj.lastStatus;
+                const result = await pingSite(siteObj.url);
+                let newStatus = result.success ? 'online' : 'offline';
+                let pingValue = result.ping !== null ? Math.round(result.ping) : null;
+
+                // Проверка изменения
+                if (oldStatus && oldStatus !== newStatus) {
+                    const host = siteObj.url.length > 30 ? siteObj.url.substr(0,30)+'…' : siteObj.url;
+                    if (newStatus === 'online') {
+                        addNotification(`✅ ${host} СНОВА ДОСТУПЕН (пинг ${pingValue}ms)`, 'success');
+                    } else {
+                        addNotification(`❌ ${host} НЕ ОТВЕЧАЕТ`, 'error');
+                    }
+                } else if (!oldStatus && newStatus === 'offline') {
+                    // при первой проверке если недоступен
+                    const host = siteObj.url;
+                    addNotification(`⚠️ ${host} НЕДОСТУПЕН (первичная проверка)`, 'warning');
+                }
+
+                siteObj.lastStatus = newStatus;
+                siteObj.lastPing = pingValue;
+                siteObj.lastChecked = new Date().toLocaleTimeString();
+            }
+
+            // обновить все сайты (фоново) + перерисовать
+            async function refreshAllSites() {
+                const promises = sites.map((site, idx) => refreshSiteStatus(site, idx));
+                await Promise.allSettled(promises);
+                renderSites();
+            }
+
+            // загрузить из localStorage
+            function loadFromStorage() {
+                const stored = localStorage.getItem('cyberSites');
+                if (stored) {
+                    try {
+                        sites = JSON.parse(stored);
+                    } catch (e) { sites = []; }
+                }
+                if (!sites || sites.length === 0) {
+                    // инициализация дефолтными (как объекты)
+                    sites = DEFAULT_SITES.map(url => ({
+                        url: url,
+                        lastStatus: null,
+                        lastPing: null,
+                        lastChecked: null
+                    }));
+                }
+                // запускаем немедленную проверку для всех
+                refreshAllSites();
+            }
+
+            // сохранить в localStorage
+            function saveToStorage() {
+                localStorage.setItem('cyberSites', JSON.stringify(sites));
+            }
+
+            // рендер карточек
+            function renderSites() {
+                const container = document.getElementById('monitorContainer');
+                container.innerHTML = '';
+                sites.forEach((site, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'site-card';
+
+                    const nameSpan = document.createElement('div');
+                    nameSpan.className = 'site-name';
+                    nameSpan.textContent = site.url.length > 35 ? site.url.slice(0,32)+'…' : site.url;
+                    card.appendChild(nameSpan);
+
+                    const pingDiv = document.createElement('div');
+                    pingDiv.className = 'ping-row';
+                    pingDiv.innerHTML = `<span>🕱 ПИНГ</span> <span class="ping-value">${site.lastPing ? site.lastPing+' ms' : '---'}</span>`;
+                    card.appendChild(pingDiv);
+
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'status-row';
+                    const badge = document.createElement('span');
+                    badge.className = `status-badge ${site.lastStatus === 'online' ? 'online' : 'offline'}`;
+                    badge.textContent = site.lastStatus === 'online' ? 'ДОСТУПЕН' : 'НЕДОСТУПЕН';
+                    statusDiv.innerHTML = '<span>⌘ СТАТУС</span>';
+                    statusDiv.appendChild(badge);
+                    card.appendChild(statusDiv);
+
+                    const checkTime = document.createElement('div');
+                    checkTime.style.fontSize = '0.9rem';
+                    checkTime.style.margin = '8px 0 0';
+                    checkTime.style.color = '#6699cc';
+                    checkTime.textContent = site.lastChecked ? `🕒 ${site.lastChecked}` : 'проверка...';
+                    card.appendChild(checkTime);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'delete-btn';
+                    delBtn.textContent = '[ УДАЛИТЬ ]';
+                    delBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        sites.splice(idx, 1);
+                        saveToStorage();
+                        renderSites();
+                        addNotification(`☠ Сайт ${site.url} удалён из списка`, 'warning');
+                    };
+                    card.appendChild(delBtn);
+
+                    container.appendChild(card);
+                });
+            }
+
+            // добавить новый сайт
+            function addSite(rawUrl) {
+                if (!rawUrl) return;
+                let cleanUrl = rawUrl.trim().replace(/^https?:\/\//, ''); // убираем протокол для хранения
+                if (cleanUrl.includes('/') && !cleanUrl.startsWith('www.') ) {
+                    // оставляем только доменную часть если вдруг ввели путь
+                    try {
+                        const urlObj = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl);
+                        cleanUrl = urlObj.hostname;
+                    } catch (e) { /* оставляем как есть */ }
+                }
+                // проверка на дубликат
+                if (sites.some(s => s.url === cleanUrl)) {
+                    addNotification(`⚠ ${cleanUrl} уже в списке`, 'warning');
+                    return;
+                }
+                const newSite = {
+                    url: cleanUrl,
+                    lastStatus: null,
+                    lastPing: null,
+                    lastChecked: null
+                };
+                sites.push(newSite);
+                saveToStorage();
+                // сразу проверим
+                refreshSiteStatus(newSite, sites.length-1).then(() => {
+                    renderSites();
+                    addNotification(`➕ ${cleanUrl} добавлен, проверка...`, 'success');
+                });
+                renderSites(); // быстрый рендер до результата пинга
+            }
+
+            // обработчик на кнопку добавить
+            document.getElementById('addSiteBtn').addEventListener('click', () => {
+                const input = document.getElementById('newSiteUrl');
+                addSite(input.value);
+                input.value = '';
+            });
+
+            // разрешить ввод с enter
+            document.getElementById('newSiteUrl').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('addSiteBtn').click();
+                }
+            });
+
+            // загружаем данные
+            loadFromStorage();
+
+            // автообновление статуса каждые 30 секунд
+            setInterval(() => {
+                refreshAllSites().then(() => saveToStorage());
+            }, 30000);
+
+            // при изменении сайтов сохраняем
+            window.addEventListener('beforeunload', () => {
+                saveToStorage();
+            });
+        })();
+    </script>
+</body>
+</html>
